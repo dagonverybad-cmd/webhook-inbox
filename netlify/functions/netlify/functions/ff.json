@@ -1,0 +1,40 @@
+const { Client, GatewayIntentBits } = require("discord.js");
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
+});
+
+const token = process.env.DISCORD_TOKEN;
+const inboxUrl = process.env.INBOX_WEBHOOK_URL;
+const secret = process.env.WEBHOOK_SECRET;
+
+client.once("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  try {
+    await fetch(inboxUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${secret}`
+      },
+      body: JSON.stringify({
+        sender: message.author.username,
+        content: message.content,
+        timestamp: message.createdAt.toISOString()
+      })
+    });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+client.login(token);
